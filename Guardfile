@@ -16,7 +16,7 @@ guard 'spork', :cucumber_env => { 'RAILS_ENV' => 'test' },
   watch(%r{features/support/}) { :cucumber }
 end
 
-guard 'rspec', all_after_pass: false, cli: '--drb' do
+guard 'rspec', all_after_pass: false,  all_on_start: true, cli: '--drb' do
   watch(%r{^spec/.+_spec\.rb$})
   watch(%r{^lib/(.+)\.rb$})     { |m| "spec/lib/#{m[1]}_spec.rb" }
   watch('spec/spec_helper.rb')  { "spec" }
@@ -25,8 +25,18 @@ guard 'rspec', all_after_pass: false, cli: '--drb' do
   watch(%r{^app/(.+)\.rb$})                           { |m| "spec/#{m[1]}_spec.rb" }
   watch(%r{^app/(.*)(\.erb|\.haml)$})                 { |m| "spec/#{m[1]}#{m[2]}_spec.rb" }
 
+  watch(%r{^spec/support/(.+)\.rb$})                  { "spec" }
+  watch('config/routes.rb')                           { "spec" }
+  watch('app/controllers/application_controller.rb')  { "spec/controllers" }
+
+  # Capybara features specs
+  watch(%r{^app/views/(.+)/.*\.(erb|haml)$})          { |m| "spec/features/#{m[1]}_spec.rb" }
+
+  # Turnip features and steps
+  watch(%r{^spec/acceptance/(.+)\.feature$})
+  watch(%r{^spec/acceptance/steps/(.+)_steps\.rb$})   { |m| Dir[File.join("**/#{m[1]}.feature")][0] || 'spec/acceptance' }
+
   # Custom Rails Tutorial specs
-  watch('config/routes.rb')
   watch(%r{^app/controllers/(.+)_(controller)\.rb$})  do |m|
     ["spec/routing/#{m[1]}_routing_spec.rb",
      "spec/#{m[2]}s/#{m[1]}_#{m[2]}_spec.rb",
@@ -42,17 +52,19 @@ guard 'rspec', all_after_pass: false, cli: '--drb' do
     "spec/requests/authentication_pages_spec.rb"
   end
 
-  watch(%r{^spec/support/(.+)\.rb$})                  { "spec" }
-  watch('config/routes.rb')                           { "spec/routing" }
-  watch('app/controllers/application_controller.rb')  { "spec/controllers" }
-
-  # Capybara features specs
-  watch(%r{^app/views/(.+)/.*\.(erb|haml)$})          { |m| "spec/features/#{m[1]}_spec.rb" }
-
-  # Turnip features and steps
-  watch(%r{^spec/acceptance/(.+)\.feature$})
-  watch(%r{^spec/acceptance/steps/(.+)_steps\.rb$})   { |m| Dir[File.join("**/#{m[1]}.feature")][0] || 'spec/acceptance' }
-
-
 end
 
+guard 'livereload', grace_period: 0.5, override_url: true do
+  # host: '127.3.3.1'     # default '0.0.0.0'
+  # port: '12345'         # default '35729'
+  # # apply_css_live: false # default true
+  # override_url: false   # default false
+  # grace_period: 0.5     # default 0 (seconds)
+  watch(%r{app/views/.+\.(erb|haml|slim)$})
+  watch(%r{app/helpers/.+\.rb})
+  watch(%r{public/.+\.(css|js|html)})
+  watch(%r{config/locales/.+\.yml})
+  watch('config/routes.rb')
+  # Rails Assets Pipeline
+  watch(%r{(app|vendor)(/assets/\w+/(.+\.(css|js|html|png|jpg))).*}) { |m| "/assets/#{m[3]}" }
+end
